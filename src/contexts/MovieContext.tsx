@@ -2,9 +2,27 @@
 
 import { createContext, useContext, useReducer, ReactNode } from "react";
 
+// Movie type definition
+export interface Movie {
+  id: number;
+  title: string;
+  overview: string;
+  release_date: string;
+  vote_average: number;
+  poster_path?: string;
+  backdrop_path?: string;
+  genre_ids?: number[];
+  adult?: boolean;
+  original_language?: string;
+  original_title?: string;
+  popularity?: number;
+  video?: boolean;
+  vote_count?: number;
+}
+
 // State interface
 interface MovieState {
-  // Empty for now
+  searchResult: Record<string, Movie[]>;
 }
 
 // Action types
@@ -32,7 +50,7 @@ const movieReducer = (state: MovieState, action: MovieAction): MovieState => {
 
 // Initial state
 const initialState: MovieState = {
-  // Empty for now
+  searchResult: {},
 };
 
 // Custom hook to use the context
