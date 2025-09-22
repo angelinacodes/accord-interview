@@ -22,11 +22,10 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       as="aside"
       w="64"
       bg="white"
-      _dark={{ bg: "gray.800" }}
+      _dark={{ bg: "gray.800", borderColor: "gray.700" }}
       shadow="sm"
       borderRight="1px"
       borderColor="gray.200"
-      _dark={{ borderColor: "gray.700" }}
       minH="calc(100vh - 80px)"
     >
       <Box as="nav" p={4}>

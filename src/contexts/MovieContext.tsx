@@ -28,7 +28,7 @@ interface MovieState {
 // Action types
 type MovieAction = {
   type: string;
-  payload?: any;
+  payload?: unknown;
 };
 
 // Context type

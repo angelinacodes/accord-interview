@@ -21,11 +21,10 @@ export default function Header() {
     <Box
       as="header"
       bg="white"
-      _dark={{ bg: "gray.800" }}
+      _dark={{ bg: "gray.800", borderColor: "gray.700" }}
       shadow="sm"
       borderBottom="1px"
       borderColor="gray.200"
-      _dark={{ borderColor: "gray.700" }}
     >
       <Box maxW="7xl" mx="auto" px={6} py={4}>
         <Flex align="center" justify="space-between">

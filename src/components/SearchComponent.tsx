@@ -1,13 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Box,
-  VStack,
-  Input,
-  InputGroup,
-  InputLeftElement,
-} from "@chakra-ui/react";
+import { Box, Input, InputGroup, InputLeftElement } from "@chakra-ui/react";
 import { SearchIcon } from "@chakra-ui/icons";
 import { useMovieContext } from "@/contexts/MovieContext";
 
@@ -50,10 +44,9 @@ export default function SearchComponent() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           bg="white"
-          _dark={{ bg: "gray.800" }}
+          _dark={{ bg: "gray.800", borderColor: "gray.600" }}
           border="1px solid"
           borderColor="gray.300"
-          _dark={{ borderColor: "gray.600" }}
           borderRadius="full"
           _focus={{
             borderColor: "blue.500",
