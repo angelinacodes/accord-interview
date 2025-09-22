@@ -16,21 +16,23 @@ export default function SearchComponent() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleFetchSearchResults = async (query: string) => {
-    const options = {
-      method: "GET",
-      headers: {
-        accept: "application/json",
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_TMDB_API_KEY}`,
-      },
-    };
-    console.log(process.env.NEXT_PUBLIC_TMDB_API_KEY);
+    try {
+      const response = await fetch(
+        `/api/search?query=${encodeURIComponent(query)}&page=1`
+      );
 
-    const response = await fetch(
-      `https://api.themoviedb.org/3/search/movie?query=${query}include_adult=false&language=en-US&page=1`,
-      options
-    );
-    const data = await response.json();
-    console.log(data);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Search results:", data);
+
+      // TODO: Update context with search results
+      // dispatch({ type: 'SET_SEARCH_RESULTS', payload: data.results });
+    } catch (error) {
+      console.error("Error fetching search results:", error);
+    }
   };
 
   useEffect(() => {
