@@ -19,7 +19,12 @@ import {
   Tab,
   TabPanel,
   Tooltip,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  HStack,
 } from "@chakra-ui/react";
+import { SearchIcon, CloseIcon } from "@chakra-ui/icons";
 import { useMovieContext, Movie } from "@/contexts/MovieContext";
 import Link from "next/link";
 
@@ -39,6 +44,11 @@ export default function BrowseMovies() {
   // const [loadingCategories, setLoadingCategories] = useState<Set<string>>(new Set());
   const [savingMovies, setSavingMovies] = useState<Set<number>>(new Set());
   const [savedMovies, setSavedMovies] = useState<Set<number>>(new Set());
+  const [localQuery, setLocalQuery] = useState("");
+  const [currentResults, setCurrentResults] = useState<Movie[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(true);
 
   // Fetch movies for a specific category
   const fetchCategoryMovies = useCallback(
@@ -85,6 +95,90 @@ export default function BrowseMovies() {
   useEffect(() => {
     fetchCategoryMovies(selectedCategory);
   }, [selectedCategory, fetchCategoryMovies]);
+
+  const handleFetchSearchResults = useCallback(
+    async (query: string) => {
+      if (!query.trim()) {
+        setCurrentResults([]);
+        setHasSearched(false);
+        return;
+      }
+
+      setHasSearched(true);
+
+      // Check if we already have results for this query
+      if (state.searchResult[query]) {
+        setCurrentResults(state.searchResult[query]);
+        return;
+      }
+
+      setIsLoading(true);
+
+      try {
+        const response = await fetch(
+          `/api/search?query=${encodeURIComponent(query)}&page=1`
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Search results:", data);
+
+        const results = data.results || [];
+        setCurrentResults(results);
+
+        // Cache the results in context
+        dispatch({
+          type: "SET_SEARCH_RESULTS",
+          payload: { query, results },
+        });
+      } catch (error) {
+        console.error("Error fetching search results:", error);
+        setCurrentResults([]);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [state.searchResult, dispatch]
+  );
+
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      handleFetchSearchResults(localQuery);
+    }, 1000);
+
+    return () => clearTimeout(timeoutId);
+  }, [localQuery, handleFetchSearchResults]);
+
+  // ESC key handler to hide search results
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setShowSearchResults(false);
+        setLocalQuery("");
+        setCurrentResults([]);
+        setHasSearched(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalQuery(e.target.value);
+    setShowSearchResults(true); // Show results when user starts typing
+  };
+
+  const handleHideSearchResults = () => {
+    setShowSearchResults(false);
+    setLocalQuery("");
+    setCurrentResults([]);
+    setHasSearched(false);
+  };
 
   const isMovieWatched = (tmdbId: number) => {
     return state.watchedMovies.some((movie) => movie.tmdb_id === tmdbId);
@@ -284,7 +378,7 @@ export default function BrowseMovies() {
   return (
     <Box minH="100vh" bg="white" _dark={{ bg: "gray.900" }}>
       <Container maxW="container.xl" py={8}>
-        <VStack spacing={6} align="stretch">
+        <VStack spacing={6} align="stretch" position="relative">
           {/* Header */}
           <VStack spacing={2} align="start">
             <Link href="/">
@@ -312,6 +406,174 @@ export default function BrowseMovies() {
               Browse Movies
             </Heading>
           </VStack>
+
+          {/* Compact Search */}
+          <Box maxW="md">
+            <InputGroup size="md">
+              <InputLeftElement pointerEvents="none">
+                <SearchIcon color="gray.400" />
+              </InputLeftElement>
+              <Input
+                placeholder="Search for movies to add..."
+                value={localQuery}
+                onChange={handleInputChange}
+                bg="white"
+                _dark={{ bg: "gray.800", borderColor: "gray.600" }}
+                border="1px solid"
+                borderColor="gray.300"
+                borderRadius="md"
+                _focus={{
+                  borderColor: "yellow.500",
+                  boxShadow: "0 0 0 1px var(--chakra-colors-yellow-500)",
+                }}
+              />
+            </InputGroup>
+            {!showSearchResults && localQuery && (
+              <Button
+                size="xs"
+                variant="outline"
+                colorScheme="yellow"
+                mt={2}
+                onClick={() => setShowSearchResults(true)}
+              >
+                Show Search Results
+              </Button>
+            )}
+          </Box>
+
+          {/* Search Results Overlay */}
+          {showSearchResults &&
+            (isLoading ||
+              currentResults.length > 0 ||
+              (hasSearched && localQuery && currentResults.length === 0)) && (
+              <Box
+                position="absolute"
+                top="120px"
+                left="0"
+                right="0"
+                zIndex={10}
+                bg="white"
+                _dark={{ bg: "gray.900", borderColor: "gray.600" }}
+                borderRadius="lg"
+                shadow="lg"
+                border="1px solid"
+                borderColor="gray.200"
+                maxH="400px"
+                overflowY="auto"
+              >
+                {isLoading && (
+                  <Center py={4}>
+                    <Spinner color="yellow.500" />
+                  </Center>
+                )}
+
+                {currentResults.length > 0 && !isLoading && (
+                  <VStack spacing={2} align="stretch" p={4}>
+                    <HStack justify="space-between" align="center">
+                      <Text fontSize="sm" color="gray.600" fontWeight="medium">
+                        Search Results:
+                      </Text>
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        colorScheme="gray"
+                        leftIcon={<CloseIcon />}
+                        onClick={handleHideSearchResults}
+                      >
+                        Hide
+                      </Button>
+                    </HStack>
+                    {currentResults.slice(0, 5).map((movie) => (
+                      <Box
+                        key={movie.id}
+                        p={3}
+                        bg="white"
+                        _dark={{ bg: "gray.800", borderColor: "gray.600" }}
+                        border="1px solid"
+                        borderColor="gray.200"
+                        borderRadius="md"
+                        cursor="pointer"
+                        _hover={{
+                          bg: "gray.50",
+                          _dark: { bg: "gray.700" },
+                        }}
+                      >
+                        <HStack spacing={3} align="start">
+                          <Image
+                            src={
+                              movie.poster_path
+                                ? `https://image.tmdb.org/t/p/w92${movie.poster_path}`
+                                : "https://via.placeholder.com/92x138/cccccc/666666?text=No+Image"
+                            }
+                            alt={`${movie.title} poster`}
+                            w="46px"
+                            h="69px"
+                            objectFit="cover"
+                            borderRadius="sm"
+                            fallbackSrc="https://via.placeholder.com/92x138/cccccc/666666?text=No+Image"
+                          />
+
+                          <VStack spacing={1} align="start" flex="1">
+                            <Text fontWeight="medium" fontSize="sm">
+                              {movie.title}
+                            </Text>
+                            <Text fontSize="xs" color="gray.500" noOfLines={2}>
+                              {movie.overview}
+                            </Text>
+                            <Text fontSize="xs" color="yellow.600">
+                              {movie.release_date
+                                ? new Date(movie.release_date).getFullYear()
+                                : "N/A"}{" "}
+                              • ⭐ {movie.vote_average?.toFixed(1) || "N/A"}
+                            </Text>
+                          </VStack>
+
+                          {(() => {
+                            const buttonState = getButtonState(movie);
+                            return (
+                              <Button
+                                size="xs"
+                                colorScheme={buttonState.colorScheme}
+                                variant={buttonState.variant}
+                                isDisabled={buttonState.isDisabled}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (!buttonState.isDisabled) {
+                                    handleSaveToWatched(movie);
+                                  }
+                                }}
+                              >
+                                {buttonState.text}
+                              </Button>
+                            );
+                          })()}
+                        </HStack>
+                      </Box>
+                    ))}
+                  </VStack>
+                )}
+
+                {hasSearched &&
+                  localQuery &&
+                  currentResults.length === 0 &&
+                  !isLoading && (
+                    <VStack spacing={2} p={4}>
+                      <Text color="gray.500" fontSize="sm">
+                        No movies found for &quot;{localQuery}&quot;
+                      </Text>
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        colorScheme="gray"
+                        leftIcon={<CloseIcon />}
+                        onClick={handleHideSearchResults}
+                      >
+                        Hide
+                      </Button>
+                    </VStack>
+                  )}
+              </Box>
+            )}
 
           {/* Category Tabs */}
           <Tabs

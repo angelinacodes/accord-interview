@@ -300,6 +300,14 @@ export default function WatchedMovies() {
                 MovieTracker
               </Heading>
             </Link>
+            <Heading
+              size="md"
+              color="gray.600"
+              _dark={{ color: "gray.300" }}
+              fontWeight="normal"
+            >
+              My Watched Movies
+            </Heading>
           </VStack>
 
           {/* Compact Search */}

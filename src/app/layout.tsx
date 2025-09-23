@@ -4,6 +4,7 @@ import { ChakraProvider } from "@chakra-ui/react";
 import theme from "@/theme";
 import { MovieProvider } from "@/contexts/MovieContext";
 import AppInitializer from "@/components/AppInitializer";
+import Navigation from "@/components/Navigation";
 
 export const metadata: Metadata = {
   title: "MovieTracker - Your Personal Movie Collection",
@@ -21,6 +22,7 @@ export default function RootLayout({
         <ChakraProvider theme={theme}>
           <MovieProvider>
             <AppInitializer />
+            <Navigation />
             {children}
           </MovieProvider>
         </ChakraProvider>

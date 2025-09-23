@@ -129,7 +129,7 @@ export default function SearchComponent() {
   const handleSaveToWatched = async (movie: Movie) => {
     // Add to saving state
     setSavingMovies((prev) => new Set(prev).add(movie.id));
-    
+
     try {
       const response = await fetch("/api/watched", {
         method: "POST",

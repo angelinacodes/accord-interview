@@ -11,7 +11,7 @@ export default function AppInitializer() {
       // Only fetch if we don't have watched movies in context and not already loading
       if (state.watchedMovies.length === 0 && !state.isLoadingWatched) {
         dispatch({ type: "SET_LOADING_WATCHED", payload: true });
-        
+
         try {
           const response = await fetch("/api/watched");
           if (response.ok) {
