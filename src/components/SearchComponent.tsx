@@ -83,6 +83,29 @@ export default function SearchComponent() {
     setLocalQuery(e.target.value);
   };
 
+  const handleSaveToWatched = async (movie: Movie) => {
+    try {
+      const response = await fetch("/api/watched", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(movie),
+      });
+
+      if (response.ok) {
+        console.log("Movie saved to watched list:", movie.title);
+        // TODO: Show success notification
+      } else {
+        console.error("Failed to save movie to watched list");
+        // TODO: Show error notification
+      }
+    } catch (error) {
+      console.error("Error saving movie:", error);
+      // TODO: Show error notification
+    }
+  };
+
   return (
     <VStack spacing={4} w="full" maxW="2xl">
       <Box w="full">
@@ -181,15 +204,14 @@ export default function SearchComponent() {
                   </Text>
                 </VStack>
 
-                {/* Add to Favorites Button */}
+                {/* Save to Watched Button */}
                 <Button
                   size="xs"
                   colorScheme="yellow"
                   variant="outline"
                   onClick={(e) => {
                     e.stopPropagation();
-                    // TODO: Add to favorites logic
-                    console.log("Add to watched:", movie.title);
+                    handleSaveToWatched(movie);
                   }}
                 >
                   Save to Watched
