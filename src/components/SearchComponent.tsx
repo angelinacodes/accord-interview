@@ -74,7 +74,7 @@ export default function SearchComponent() {
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       handleFetchSearchResults(localQuery);
-    }, 1000);
+    }, 500);
 
     return () => clearTimeout(timeoutId);
   }, [localQuery, handleFetchSearchResults]);

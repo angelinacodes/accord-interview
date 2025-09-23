@@ -249,7 +249,7 @@ export default function WatchedMovies() {
     <Box minH="100vh" bg="white" _dark={{ bg: "gray.900" }}>
       <Container maxW="container.xl" py={8}>
         {/* Header */}
-        <VStack spacing={6} align="stretch">
+        <VStack spacing={6} align="stretch" position="relative">
           <VStack spacing={2} align="start">
             <Link href="/">
               <Heading
@@ -303,118 +303,139 @@ export default function WatchedMovies() {
             )}
           </Box>
 
-          {/* Search Results */}
-          {isLoading && (
-            <Center py={4}>
-              <Spinner color="yellow.500" />
-            </Center>
-          )}
-
-          {showSearchResults && currentResults.length > 0 && !isLoading && (
-            <VStack spacing={2} align="stretch" maxH="300px" overflowY="auto">
-              <HStack justify="space-between" align="center">
-                <Text fontSize="sm" color="gray.600" fontWeight="medium">
-                  Search Results:
-                </Text>
-                <Button
-                  size="xs"
-                  variant="ghost"
-                  colorScheme="gray"
-                  leftIcon={<CloseIcon />}
-                  onClick={handleHideSearchResults}
-                >
-                  Hide
-                </Button>
-              </HStack>
-              {currentResults.slice(0, 5).map((movie) => (
-                <Box
-                  key={movie.id}
-                  p={3}
-                  bg="white"
-                  _dark={{ bg: "gray.800", borderColor: "gray.600" }}
-                  border="1px solid"
-                  borderColor="gray.200"
-                  borderRadius="md"
-                  cursor="pointer"
-                  _hover={{
-                    bg: "gray.50",
-                    _dark: { bg: "gray.700" },
-                  }}
-                >
-                  <HStack spacing={3} align="start">
-                    <Image
-                      src={
-                        movie.poster_path
-                          ? `https://image.tmdb.org/t/p/w92${movie.poster_path}`
-                          : "https://via.placeholder.com/92x138/cccccc/666666?text=No+Image"
-                      }
-                      alt={`${movie.title} poster`}
-                      w="46px"
-                      h="69px"
-                      objectFit="cover"
-                      borderRadius="sm"
-                      fallbackSrc="https://via.placeholder.com/92x138/cccccc/666666?text=No+Image"
-                    />
-
-                    <VStack spacing={1} align="start" flex="1">
-                      <Text fontWeight="medium" fontSize="sm">
-                        {movie.title}
-                      </Text>
-                      <Text fontSize="xs" color="gray.500" noOfLines={2}>
-                        {movie.overview}
-                      </Text>
-                      <Text fontSize="xs" color="yellow.600">
-                        {movie.release_date
-                          ? new Date(movie.release_date).getFullYear()
-                          : "N/A"}{" "}
-                        • ⭐ {movie.vote_average?.toFixed(1) || "N/A"}
-                      </Text>
-                    </VStack>
-
-                    {(() => {
-                      const buttonState = getButtonState(movie);
-                      return (
-                        <Button
-                          size="xs"
-                          colorScheme={buttonState.colorScheme}
-                          variant={buttonState.variant}
-                          isDisabled={buttonState.isDisabled}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (!buttonState.isDisabled) {
-                              handleSaveToWatched(movie);
-                            }
-                          }}
-                        >
-                          {buttonState.text}
-                        </Button>
-                      );
-                    })()}
-                  </HStack>
-                </Box>
-              ))}
-            </VStack>
-          )}
-
+          {/* Search Results Overlay */}
           {showSearchResults &&
-            hasSearched &&
-            localQuery &&
-            currentResults.length === 0 &&
-            !isLoading && (
-              <VStack spacing={2}>
-                <Text color="gray.500" fontSize="sm">
-                  No movies found for "{localQuery}"
-                </Text>
-                <Button
-                  size="xs"
-                  variant="ghost"
-                  colorScheme="gray"
-                  leftIcon={<CloseIcon />}
-                  onClick={handleHideSearchResults}
-                >
-                  Hide
-                </Button>
-              </VStack>
+            (isLoading ||
+              currentResults.length > 0 ||
+              (hasSearched && localQuery && currentResults.length === 0)) && (
+              <Box
+                position="absolute"
+                top="120px"
+                left="0"
+                right="0"
+                zIndex={10}
+                bg="white"
+                _dark={{ bg: "gray.900" }}
+                borderRadius="lg"
+                shadow="lg"
+                border="1px solid"
+                borderColor="gray.200"
+                _dark={{ borderColor: "gray.600" }}
+                maxH="400px"
+                overflowY="auto"
+              >
+                {isLoading && (
+                  <Center py={4}>
+                    <Spinner color="yellow.500" />
+                  </Center>
+                )}
+
+                {currentResults.length > 0 && !isLoading && (
+                  <VStack spacing={2} align="stretch" p={4}>
+                    <HStack justify="space-between" align="center">
+                      <Text fontSize="sm" color="gray.600" fontWeight="medium">
+                        Search Results:
+                      </Text>
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        colorScheme="gray"
+                        leftIcon={<CloseIcon />}
+                        onClick={handleHideSearchResults}
+                      >
+                        Hide
+                      </Button>
+                    </HStack>
+                    {currentResults.slice(0, 5).map((movie) => (
+                      <Box
+                        key={movie.id}
+                        p={3}
+                        bg="white"
+                        _dark={{ bg: "gray.800", borderColor: "gray.600" }}
+                        border="1px solid"
+                        borderColor="gray.200"
+                        borderRadius="md"
+                        cursor="pointer"
+                        _hover={{
+                          bg: "gray.50",
+                          _dark: { bg: "gray.700" },
+                        }}
+                      >
+                        <HStack spacing={3} align="start">
+                          <Image
+                            src={
+                              movie.poster_path
+                                ? `https://image.tmdb.org/t/p/w92${movie.poster_path}`
+                                : "https://via.placeholder.com/92x138/cccccc/666666?text=No+Image"
+                            }
+                            alt={`${movie.title} poster`}
+                            w="46px"
+                            h="69px"
+                            objectFit="cover"
+                            borderRadius="sm"
+                            fallbackSrc="https://via.placeholder.com/92x138/cccccc/666666?text=No+Image"
+                          />
+
+                          <VStack spacing={1} align="start" flex="1">
+                            <Text fontWeight="medium" fontSize="sm">
+                              {movie.title}
+                            </Text>
+                            <Text fontSize="xs" color="gray.500" noOfLines={2}>
+                              {movie.overview}
+                            </Text>
+                            <Text fontSize="xs" color="yellow.600">
+                              {movie.release_date
+                                ? new Date(movie.release_date).getFullYear()
+                                : "N/A"}{" "}
+                              • ⭐ {movie.vote_average?.toFixed(1) || "N/A"}
+                            </Text>
+                          </VStack>
+
+                          {(() => {
+                            const buttonState = getButtonState(movie);
+                            return (
+                              <Button
+                                size="xs"
+                                colorScheme={buttonState.colorScheme}
+                                variant={buttonState.variant}
+                                isDisabled={buttonState.isDisabled}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (!buttonState.isDisabled) {
+                                    handleSaveToWatched(movie);
+                                  }
+                                }}
+                              >
+                                {buttonState.text}
+                              </Button>
+                            );
+                          })()}
+                        </HStack>
+                      </Box>
+                    ))}
+                  </VStack>
+                )}
+
+                {hasSearched &&
+                  localQuery &&
+                  currentResults.length === 0 &&
+                  !isLoading && (
+                    <VStack spacing={2} p={4}>
+                      <Text color="gray.500" fontSize="sm">
+                        No movies found for "{localQuery}"
+                      </Text>
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        colorScheme="gray"
+                        leftIcon={<CloseIcon />}
+                        onClick={handleHideSearchResults}
+                      >
+                        Hide
+                      </Button>
+                    </VStack>
+                  )}
+              </Box>
             )}
 
           {/* Watched Movies Grid */}
