@@ -38,34 +38,7 @@ export default function WatchedMovies() {
   const [removingMovies, setRemovingMovies] = useState<Set<number>>(new Set());
   const [removedMovies, setRemovedMovies] = useState<Set<number>>(new Set());
 
-  // Fetch watched movies on component mount
-  useEffect(() => {
-    const fetchWatchedMovies = async () => {
-      // Only fetch if we don't have watched movies in context
-      if (state.watchedMovies.length === 0 && !state.isLoadingWatched) {
-        dispatch({ type: "SET_LOADING_WATCHED", payload: true });
-
-        try {
-          const response = await fetch("/api/watched");
-          if (response.ok) {
-            const data = await response.json();
-            dispatch({
-              type: "SET_WATCHED_MOVIES",
-              payload: data.movies || [],
-            });
-          } else {
-            console.error("Failed to fetch watched movies");
-            dispatch({ type: "SET_LOADING_WATCHED", payload: false });
-          }
-        } catch (error) {
-          console.error("Error fetching watched movies:", error);
-          dispatch({ type: "SET_LOADING_WATCHED", payload: false });
-        }
-      }
-    };
-
-    fetchWatchedMovies();
-  }, [state.watchedMovies.length, state.isLoadingWatched, dispatch]);
+  // Watched movies are now fetched globally in AppInitializer
 
   const handleFetchSearchResults = useCallback(
     async (query: string) => {
@@ -481,7 +454,7 @@ export default function WatchedMovies() {
                   !isLoading && (
                     <VStack spacing={2} p={4}>
                       <Text color="gray.500" fontSize="sm">
-                        No movies found for "{localQuery}"
+                        No movies found for &quot;{localQuery}&quot;
                       </Text>
                       <Button
                         size="xs"

@@ -21,6 +21,8 @@ export default function SearchComponent() {
   const [currentResults, setCurrentResults] = useState<Movie[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [savingMovies, setSavingMovies] = useState<Set<number>>(new Set());
+  const [savedMovies, setSavedMovies] = useState<Set<number>>(new Set());
 
   const handleFetchSearchResults = useCallback(
     async (query: string) => {
@@ -83,7 +85,51 @@ export default function SearchComponent() {
     setLocalQuery(e.target.value);
   };
 
+  const isMovieWatched = (tmdbId: number) => {
+    return state.watchedMovies.some((movie) => movie.tmdb_id === tmdbId);
+  };
+
+  const getButtonState = (movie: Movie) => {
+    const isWatched = isMovieWatched(movie.id);
+    const isSaving = savingMovies.has(movie.id);
+    const isSaved = savedMovies.has(movie.id);
+
+    if (isSaved) {
+      return {
+        text: "Added!",
+        variant: "solid",
+        colorScheme: "green",
+        isDisabled: true,
+      };
+    }
+    if (isSaving) {
+      return {
+        text: "Adding...",
+        variant: "outline",
+        colorScheme: "yellow",
+        isDisabled: true,
+      };
+    }
+    if (isWatched) {
+      return {
+        text: "Watched",
+        variant: "solid",
+        colorScheme: "yellow",
+        isDisabled: true,
+      };
+    }
+    return {
+      text: "Save to Watched",
+      variant: "outline",
+      colorScheme: "yellow",
+      isDisabled: false,
+    };
+  };
+
   const handleSaveToWatched = async (movie: Movie) => {
+    // Add to saving state
+    setSavingMovies((prev) => new Set(prev).add(movie.id));
+    
     try {
       const response = await fetch("/api/watched", {
         method: "POST",
@@ -94,8 +140,20 @@ export default function SearchComponent() {
       });
 
       if (response.ok) {
+        const responseData = await response.json();
         console.log("Movie saved to watched list:", movie.title);
-        // TODO: Show success notification
+        // Add to context immediately for better UX - use the returned movie data with database ID
+        dispatch({ type: "ADD_WATCHED_MOVIE", payload: responseData.movie });
+        // Show success state
+        setSavedMovies((prev) => new Set(prev).add(movie.id));
+        // Clear success state after 2 seconds
+        setTimeout(() => {
+          setSavedMovies((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(movie.id);
+            return newSet;
+          });
+        }, 2000);
       } else {
         console.error("Failed to save movie to watched list");
         // TODO: Show error notification
@@ -103,6 +161,13 @@ export default function SearchComponent() {
     } catch (error) {
       console.error("Error saving movie:", error);
       // TODO: Show error notification
+    } finally {
+      // Remove from saving state
+      setSavingMovies((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(movie.id);
+        return newSet;
+      });
     }
   };
 
@@ -205,17 +270,25 @@ export default function SearchComponent() {
                 </VStack>
 
                 {/* Save to Watched Button */}
-                <Button
-                  size="xs"
-                  colorScheme="yellow"
-                  variant="outline"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSaveToWatched(movie);
-                  }}
-                >
-                  Save to Watched
-                </Button>
+                {(() => {
+                  const buttonState = getButtonState(movie);
+                  return (
+                    <Button
+                      size="xs"
+                      colorScheme={buttonState.colorScheme}
+                      variant={buttonState.variant}
+                      isDisabled={buttonState.isDisabled}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!buttonState.isDisabled) {
+                          handleSaveToWatched(movie);
+                        }
+                      }}
+                    >
+                      {buttonState.text}
+                    </Button>
+                  );
+                })()}
               </HStack>
             </Box>
           ))}
@@ -227,7 +300,7 @@ export default function SearchComponent() {
         currentResults.length === 0 &&
         !isLoading && (
           <Text color="gray.500" fontSize="sm">
-            No movies found for "{localQuery}"
+            No movies found for &quot;{localQuery}&quot;
           </Text>
         )}
     </VStack>

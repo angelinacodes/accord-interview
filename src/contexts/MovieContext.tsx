@@ -26,6 +26,8 @@ interface MovieState {
   searchResult: Record<string, Movie[]>; // Cache search results
   watchedMovies: Movie[]; // Store watched movies list
   isLoadingWatched: boolean; // Loading state for watched movies
+  browseLists: Record<string, Movie[]>; // Cache browse movie lists
+  loadingBrowseLists: Set<string>; // Loading state for browse lists
 }
 
 // Action types
@@ -59,10 +61,10 @@ const movieReducer = (state: MovieState, action: MovieAction): MovieState => {
         },
       };
     case "SET_WATCHED_MOVIES":
-      const movies = action.payload as Movie[];
+      const watchedMovies = action.payload as Movie[];
       return {
         ...state,
-        watchedMovies: movies,
+        watchedMovies: watchedMovies,
         isLoadingWatched: false,
       };
     case "ADD_WATCHED_MOVIE":
@@ -85,6 +87,34 @@ const movieReducer = (state: MovieState, action: MovieAction): MovieState => {
         ...state,
         isLoadingWatched: isLoading,
       };
+    case "SET_BROWSE_LIST":
+      const { category, movies: browseMovies } = action.payload as {
+        category: string;
+        movies: Movie[];
+      };
+      return {
+        ...state,
+        browseLists: {
+          ...state.browseLists,
+          [category]: browseMovies,
+        },
+      };
+    case "SET_LOADING_BROWSE_LIST":
+      const { category: loadingCategory, isLoading: isLoadingList } =
+        action.payload as {
+          category: string;
+          isLoading: boolean;
+        };
+      const newLoadingSet = new Set(state.loadingBrowseLists);
+      if (isLoadingList) {
+        newLoadingSet.add(loadingCategory);
+      } else {
+        newLoadingSet.delete(loadingCategory);
+      }
+      return {
+        ...state,
+        loadingBrowseLists: newLoadingSet,
+      };
     default:
       return state;
   }
@@ -95,6 +125,8 @@ const initialState: MovieState = {
   searchResult: {},
   watchedMovies: [],
   isLoadingWatched: false,
+  browseLists: {},
+  loadingBrowseLists: new Set(),
 };
 
 // Custom hook to use the context

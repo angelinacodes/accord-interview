@@ -7,25 +7,27 @@ import Link from "next/link";
 export default function DashboardNavs() {
   return (
     <HStack spacing={4}>
-      <Button
-        bg="yellow.400"
-        color="black"
-        _hover={{
-          bg: "yellow.500",
-        }}
-        _active={{
-          bg: "yellow.600",
-        }}
-        border="none"
-        borderRadius="md"
-        px={6}
-        py={3}
-        fontSize="sm"
-        fontWeight="medium"
-        rightIcon={<ArrowForwardIcon />}
-      >
-        Browse Movies
-      </Button>
+      <Link href="/browse">
+        <Button
+          bg="yellow.400"
+          color="black"
+          _hover={{
+            bg: "yellow.500",
+          }}
+          _active={{
+            bg: "yellow.600",
+          }}
+          border="none"
+          borderRadius="md"
+          px={6}
+          py={3}
+          fontSize="sm"
+          fontWeight="medium"
+          rightIcon={<ArrowForwardIcon />}
+        >
+          Browse Movies
+        </Button>
+      </Link>
       <Link href="/watched">
         <Button
           bg="yellow.400"

@@ -1,13 +1,13 @@
 "use client";
 
 import { Box, VStack } from "@chakra-ui/react";
-import { useMovieContext } from "@/contexts/MovieContext";
+// import { useMovieContext } from "@/contexts/MovieContext"; // Not used in this component
 import HeadingComponent from "./HeadingComponent";
 import SearchComponent from "./SearchComponent";
 import DashboardNavs from "./DashboardNavs";
 
 export default function Dashboard() {
-  const { state, dispatch } = useMovieContext();
+  // const { state, dispatch } = useMovieContext(); // Not used in this component
 
   return (
     <Box minH="100vh" bg="white" _dark={{ bg: "gray.900" }}>
