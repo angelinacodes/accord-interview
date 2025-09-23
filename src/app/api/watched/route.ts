@@ -105,6 +105,12 @@ export async function GET() {
       );
     }
 
+    console.log("GET watched movies - Found", data?.length || 0, "movies");
+    console.log(
+      "Movie IDs:",
+      data?.map((m) => ({ id: m.tmdb_id, title: m.title }))
+    );
+
     return NextResponse.json({
       success: true,
       movies: data,
@@ -122,30 +128,47 @@ export async function GET() {
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const tmdbId = searchParams.get("tmdb_id");
+    const movieId = searchParams.get("id") || searchParams.get("tmdb_id");
 
-    if (!tmdbId) {
+    console.log("DELETE request - movie id:", movieId);
+
+    if (!movieId) {
       return NextResponse.json(
-        { error: "TMDB ID is required" },
+        { error: "Movie ID is required" },
         { status: 400 }
+      );
+    }
+
+    // First, let's check if the movie exists
+    const { data: existingMovie, error: checkError } = await supabase
+      .from("watched_movies")
+      .select("id, tmdb_id, title")
+      .eq("id", parseInt(movieId))
+      .single();
+
+    console.log(
+      "Checking for existing movie:",
+      existingMovie,
+      "Error:",
+      checkError
+    );
+
+    if (checkError && checkError.code === "PGRST116") {
+      return NextResponse.json(
+        { error: "Movie not found in watched list" },
+        { status: 404 }
       );
     }
 
     const { data, error } = await supabase
       .from("watched_movies")
       .delete()
-      .eq("tmdb_id", tmdbId)
+      .eq("id", parseInt(movieId))
       .select()
       .single();
 
     if (error) {
-      if (error.code === "PGRST116") {
-        return NextResponse.json(
-          { error: "Movie not found in watched list" },
-          { status: 404 }
-        );
-      }
-      console.error("Supabase error:", error);
+      console.error("Supabase delete error:", error);
       return NextResponse.json(
         { error: "Database error", details: error.message },
         { status: 500 }

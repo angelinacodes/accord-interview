@@ -17,6 +17,7 @@ import {
   Container,
   Spinner,
   Center,
+  Tooltip,
 } from "@chakra-ui/react";
 import { SearchIcon, CloseIcon } from "@chakra-ui/icons";
 import { useMovieContext, Movie } from "@/contexts/MovieContext";
@@ -33,6 +34,8 @@ export default function WatchedMovies() {
   const [showSearchResults, setShowSearchResults] = useState(true);
   const [savingMovies, setSavingMovies] = useState<Set<number>>(new Set());
   const [savedMovies, setSavedMovies] = useState<Set<number>>(new Set());
+  const [removingMovies, setRemovingMovies] = useState<Set<number>>(new Set());
+  const [removedMovies, setRemovedMovies] = useState<Set<number>>(new Set());
 
   // Fetch watched movies on component mount
   useEffect(() => {
@@ -180,6 +183,34 @@ export default function WatchedMovies() {
     };
   };
 
+  const getRemoveButtonState = (movie: Movie) => {
+    const isRemoving = removingMovies.has(movie.id);
+    const isRemoved = removedMovies.has(movie.id);
+
+    if (isRemoved) {
+      return {
+        text: "Removed!",
+        variant: "solid",
+        colorScheme: "green",
+        isDisabled: true,
+      };
+    }
+    if (isRemoving) {
+      return {
+        text: "Removing...",
+        variant: "outline",
+        colorScheme: "red",
+        isDisabled: true,
+      };
+    }
+    return {
+      text: "Remove",
+      variant: "outline",
+      colorScheme: "red",
+      isDisabled: false,
+    };
+  };
+
   const handleSaveToWatched = async (movie: Movie) => {
     // Add to saving state
     setSavingMovies((prev) => new Set(prev).add(movie.id));
@@ -224,17 +255,31 @@ export default function WatchedMovies() {
     }
   };
 
-  const handleRemoveFromWatched = async (tmdbId: number) => {
+  const handleRemoveFromWatched = async (movieId: number) => {
+    // Add to removing state
+    setRemovingMovies((prev) => new Set(prev).add(movieId));
+
     try {
-      const response = await fetch(`/api/watched?tmdb_id=${tmdbId}`, {
+      const response = await fetch(`/api/watched?id=${movieId}`, {
         method: "DELETE",
       });
 
       if (response.ok) {
         console.log("Movie removed from watched list");
-        // Remove from local state immediately for better UX
-        setWatchedMovies((prev) => prev.filter((movie) => movie.id !== tmdbId));
-        // TODO: Show success notification
+        // Show success state
+        setRemovedMovies((prev) => new Set(prev).add(movieId));
+        // Remove from local state after showing success
+        setTimeout(() => {
+          setWatchedMovies((prev) =>
+            prev.filter((movie) => movie.id !== movieId)
+          );
+          // Clear success state
+          setRemovedMovies((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(movieId);
+            return newSet;
+          });
+        }, 1500);
       } else {
         console.error("Failed to remove movie from watched list");
         // TODO: Show error notification
@@ -242,6 +287,13 @@ export default function WatchedMovies() {
     } catch (error) {
       console.error("Error removing movie:", error);
       // TODO: Show error notification
+    } finally {
+      // Remove from removing state
+      setRemovingMovies((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(movieId);
+        return newSet;
+      });
     }
   };
 
@@ -315,12 +367,11 @@ export default function WatchedMovies() {
                 right="0"
                 zIndex={10}
                 bg="white"
-                _dark={{ bg: "gray.900" }}
+                _dark={{ bg: "gray.900", borderColor: "gray.600" }}
                 borderRadius="lg"
                 shadow="lg"
                 border="1px solid"
                 borderColor="gray.200"
-                _dark={{ borderColor: "gray.600" }}
                 maxH="400px"
                 overflowY="auto"
               >
@@ -507,14 +558,24 @@ export default function WatchedMovies() {
                         justifyContent="space-between"
                       >
                         <Box>
-                          <Text
-                            fontWeight="semibold"
-                            fontSize="xs"
-                            noOfLines={2}
-                            mb={1}
+                          <Tooltip
+                            label={movie.title}
+                            hasArrow
+                            placement="top"
+                            bg="gray.700"
+                            color="white"
+                            fontSize="sm"
                           >
-                            {movie.title}
-                          </Text>
+                            <Text
+                              fontWeight="semibold"
+                              fontSize="xs"
+                              noOfLines={1}
+                              mb={1}
+                              cursor="help"
+                            >
+                              {movie.title}
+                            </Text>
+                          </Tooltip>
                           <Text fontSize="xs" color="gray.500" mb={2}>
                             {movie.release_date
                               ? new Date(movie.release_date).getFullYear()
@@ -522,16 +583,26 @@ export default function WatchedMovies() {
                             • ⭐ {movie.vote_average?.toFixed(1) || "N/A"}
                           </Text>
                         </Box>
-                        <Button
-                          size="xs"
-                          colorScheme="red"
-                          variant="outline"
-                          w="full"
-                          fontSize="xs"
-                          onClick={() => handleRemoveFromWatched(movie.id)}
-                        >
-                          Remove
-                        </Button>
+                        {(() => {
+                          const buttonState = getRemoveButtonState(movie);
+                          return (
+                            <Button
+                              size="xs"
+                              colorScheme={buttonState.colorScheme}
+                              variant={buttonState.variant}
+                              w="full"
+                              fontSize="xs"
+                              isDisabled={buttonState.isDisabled}
+                              onClick={() => {
+                                if (!buttonState.isDisabled) {
+                                  handleRemoveFromWatched(movie.id);
+                                }
+                              }}
+                            >
+                              {buttonState.text}
+                            </Button>
+                          );
+                        })()}
                       </Box>
                     </Box>
                   </GridItem>
