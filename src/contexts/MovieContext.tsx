@@ -4,7 +4,8 @@ import { createContext, useContext, useReducer, ReactNode } from "react";
 
 // Movie type definition
 export interface Movie {
-  id: number;
+  id: number; // Database primary key
+  tmdb_id?: number; // TMDb ID (for movies from database)
   title: string;
   overview: string;
   release_date: string;
@@ -22,7 +23,9 @@ export interface Movie {
 
 // State interface
 interface MovieState {
-  searchResult: Record<string, Movie[]>; // NOTE: potential improvement: cache search results here
+  searchResult: Record<string, Movie[]>; // Cache search results
+  watchedMovies: Movie[]; // Store watched movies list
+  isLoadingWatched: boolean; // Loading state for watched movies
 }
 
 // Action types
@@ -55,6 +58,33 @@ const movieReducer = (state: MovieState, action: MovieAction): MovieState => {
           [query]: results,
         },
       };
+    case "SET_WATCHED_MOVIES":
+      const movies = action.payload as Movie[];
+      return {
+        ...state,
+        watchedMovies: movies,
+        isLoadingWatched: false,
+      };
+    case "ADD_WATCHED_MOVIE":
+      const newMovie = action.payload as Movie;
+      return {
+        ...state,
+        watchedMovies: [newMovie, ...state.watchedMovies],
+      };
+    case "REMOVE_WATCHED_MOVIE":
+      const movieId = action.payload as number;
+      return {
+        ...state,
+        watchedMovies: state.watchedMovies.filter(
+          (movie) => movie.id !== movieId
+        ),
+      };
+    case "SET_LOADING_WATCHED":
+      const isLoading = action.payload as boolean;
+      return {
+        ...state,
+        isLoadingWatched: isLoading,
+      };
     default:
       return state;
   }
@@ -63,6 +93,8 @@ const movieReducer = (state: MovieState, action: MovieAction): MovieState => {
 // Initial state
 const initialState: MovieState = {
   searchResult: {},
+  watchedMovies: [],
+  isLoadingWatched: false,
 };
 
 // Custom hook to use the context

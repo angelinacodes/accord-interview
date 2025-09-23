@@ -29,8 +29,9 @@ export default function WatchedMovies() {
   const [currentResults, setCurrentResults] = useState<Movie[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-  const [watchedMovies, setWatchedMovies] = useState<Movie[]>([]);
-  const [isLoadingWatched, setIsLoadingWatched] = useState(true);
+  // Remove local state - now using context
+  // const [watchedMovies, setWatchedMovies] = useState<Movie[]>([]);
+  // const [isLoadingWatched, setIsLoadingWatched] = useState(true);
   const [showSearchResults, setShowSearchResults] = useState(true);
   const [savingMovies, setSavingMovies] = useState<Set<number>>(new Set());
   const [savedMovies, setSavedMovies] = useState<Set<number>>(new Set());
@@ -40,23 +41,31 @@ export default function WatchedMovies() {
   // Fetch watched movies on component mount
   useEffect(() => {
     const fetchWatchedMovies = async () => {
-      try {
-        const response = await fetch("/api/watched");
-        if (response.ok) {
-          const data = await response.json();
-          setWatchedMovies(data.movies || []);
-        } else {
-          console.error("Failed to fetch watched movies");
+      // Only fetch if we don't have watched movies in context
+      if (state.watchedMovies.length === 0 && !state.isLoadingWatched) {
+        dispatch({ type: "SET_LOADING_WATCHED", payload: true });
+
+        try {
+          const response = await fetch("/api/watched");
+          if (response.ok) {
+            const data = await response.json();
+            dispatch({
+              type: "SET_WATCHED_MOVIES",
+              payload: data.movies || [],
+            });
+          } else {
+            console.error("Failed to fetch watched movies");
+            dispatch({ type: "SET_LOADING_WATCHED", payload: false });
+          }
+        } catch (error) {
+          console.error("Error fetching watched movies:", error);
+          dispatch({ type: "SET_LOADING_WATCHED", payload: false });
         }
-      } catch (error) {
-        console.error("Error fetching watched movies:", error);
-      } finally {
-        setIsLoadingWatched(false);
       }
     };
 
     fetchWatchedMovies();
-  }, []);
+  }, [state.watchedMovies.length, state.isLoadingWatched, dispatch]);
 
   const handleFetchSearchResults = useCallback(
     async (query: string) => {
@@ -142,8 +151,8 @@ export default function WatchedMovies() {
     setHasSearched(false);
   };
 
-  const isMovieWatched = (movieId: number) => {
-    return watchedMovies.some((movie) => movie.id === movieId);
+  const isMovieWatched = (tmdbId: number) => {
+    return state.watchedMovies.some((movie) => movie.tmdb_id === tmdbId);
   };
 
   const getButtonState = (movie: Movie) => {
@@ -225,9 +234,10 @@ export default function WatchedMovies() {
       });
 
       if (response.ok) {
+        const responseData = await response.json();
         console.log("Movie saved to watched list:", movie.title);
-        // Add to local state immediately for better UX
-        setWatchedMovies((prev) => [movie, ...prev]);
+        // Add to context immediately for better UX - use the returned movie data with database ID
+        dispatch({ type: "ADD_WATCHED_MOVIE", payload: responseData.movie });
         // Show success state
         setSavedMovies((prev) => new Set(prev).add(movie.id));
         // Clear success state after 2 seconds
@@ -268,11 +278,9 @@ export default function WatchedMovies() {
         console.log("Movie removed from watched list");
         // Show success state
         setRemovedMovies((prev) => new Set(prev).add(movieId));
-        // Remove from local state after showing success
+        // Remove from context after showing success
         setTimeout(() => {
-          setWatchedMovies((prev) =>
-            prev.filter((movie) => movie.id !== movieId)
-          );
+          dispatch({ type: "REMOVE_WATCHED_MOVIE", payload: movieId });
           // Clear success state
           setRemovedMovies((prev) => {
             const newSet = new Set(prev);
@@ -498,14 +506,14 @@ export default function WatchedMovies() {
               color="gray.700"
               _dark={{ color: "gray.300" }}
             >
-              Your Watched Movies ({watchedMovies.length})
+              Your Watched Movies ({state.watchedMovies.length})
             </Text>
 
-            {isLoadingWatched ? (
+            {state.isLoadingWatched ? (
               <Center py={8}>
                 <Spinner color="yellow.500" />
               </Center>
-            ) : watchedMovies.length === 0 ? (
+            ) : state.watchedMovies.length === 0 ? (
               <Center py={8}>
                 <VStack spacing={4}>
                   <Text color="gray.500" fontSize="lg">
@@ -521,7 +529,7 @@ export default function WatchedMovies() {
                 templateColumns="repeat(auto-fill, minmax(220px, 1fr))"
                 gap={4}
               >
-                {watchedMovies.map((movie) => (
+                {state.watchedMovies.map((movie) => (
                   <GridItem key={movie.id}>
                     <Box
                       bg="white"
