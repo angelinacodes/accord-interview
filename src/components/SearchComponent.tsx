@@ -30,7 +30,7 @@ export default function SearchComponent() {
   };
 
   useEffect(() => {
-    handleFetchSearchResults("harry potter");
+    handleFetchSearchResults("lord of the rings");
   }, []);
 
   return (

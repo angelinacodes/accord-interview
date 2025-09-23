@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     const response = await fetch(tmdbUrl, {
       method: "GET",
       headers: {
-        Accept: "application/json",
+        accept: "application/json",
       },
     });
 
