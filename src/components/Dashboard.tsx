@@ -21,8 +21,8 @@ export default function Dashboard() {
         px={8}
       >
         <HeadingComponent />
-        <SearchComponent />
         <DashboardNavs />
+        <SearchComponent />
       </VStack>
     </Box>
   );

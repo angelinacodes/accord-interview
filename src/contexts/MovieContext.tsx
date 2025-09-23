@@ -22,7 +22,7 @@ export interface Movie {
 
 // State interface
 interface MovieState {
-  searchResult: Record<string, Movie[]>;
+  searchResult: Record<string, Movie[]>; // NOTE: potential improvement: cache search results here
 }
 
 // Action types
@@ -43,6 +43,18 @@ const MovieContext = createContext<MovieContextType | undefined>(undefined);
 // Reducer function
 const movieReducer = (state: MovieState, action: MovieAction): MovieState => {
   switch (action.type) {
+    case "SET_SEARCH_RESULTS":
+      const { query, results } = action.payload as {
+        query: string;
+        results: Movie[];
+      };
+      return {
+        ...state,
+        searchResult: {
+          ...state.searchResult,
+          [query]: results,
+        },
+      };
     default:
       return state;
   }
